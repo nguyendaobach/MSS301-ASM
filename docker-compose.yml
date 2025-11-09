@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  # MS Account Service
+  msaccount:
+    build:
+      context: ./MSAccount_QE180006
+      dockerfile: Dockerfile
+    container_name: msaccount
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://dpg-d48b5o49c44c73b25vvg-a/accountdb_az1k
+      - SPRING_DATASOURCE_USERNAME=accountdb_az1k_user
+      - SPRING_DATASOURCE_PASSWORD=Y975hz3okJKOVi2hm9GgaSJzYkndnSst
+    networks:
+      - microservices-network
+    restart: on-failure
+
+  # MS Brand Service
+  msbrand:
+    build:
+      context: ./MSBrand_QE180006
+      dockerfile: Dockerfile
+    container_name: msbrand
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db.jndulnmnvtimrqfwideb.supabase.co:5432/postgres
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=bach@129052004
+    networks:
+      - microservices-network
+    restart: on-failure
+
+  # MS BlindBox Service
+  msblindbox:
+    build:
+      context: ./MSBlindBox_QE180006
+      dockerfile: Dockerfile
+    container_name: msblindbox
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db.cdttwujwmdeeznblpzoi.supabase.co:5432/postgres
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=bach@129052004
+    networks:
+      - microservices-network
+    restart: on-failure
+
+  # API Gateway
+  apigateway:
+    build:
+      context: ./APIGateway_QE180006
+      dockerfile: Dockerfile
+    container_name: apigateway
+    ports:
+      - "8080:8080"
+    environment:
+      # Override service URLs to use container names
+      - SPRING_CLOUD_GATEWAY_ROUTES_0_URI=http://msaccount:8081
+      - SPRING_CLOUD_GATEWAY_ROUTES_1_URI=http://msblindbox:8083
+      - SPRING_CLOUD_GATEWAY_ROUTES_2_URI=http://msbrand:8082
+    depends_on:
+      - msaccount
+      - msbrand
+      - msblindbox
+    networks:
+      - microservices-network
+    restart: on-failure
+
+networks:
+  microservices-network:
+    driver: bridge

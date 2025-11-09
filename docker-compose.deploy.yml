@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  # MS Account Service
+  msaccount:
+    image: nguyendaobach/msaccount-qe180006:latest
+    container_name: msaccount
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://dpg-d48b5o49c44c73b25vvg-a/accountdb_az1k
+      - SPRING_DATASOURCE_USERNAME=accountdb_az1k_user
+      - SPRING_DATASOURCE_PASSWORD=Y975hz3okJKOVi2hm9GgaSJzYkndnSst
+    networks:
+      - microservices-network
+    restart: on-failure
+
+  # MS Brand Service
+  msbrand:
+    image: nguyendaobach/msbrand-qe180006:latest
+    container_name: msbrand
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://aws-1-ap-southeast-2.pooler.supabase.com:6543/postgres
+      - SPRING_DATASOURCE_USERNAME=postgres.jndulnmnvtimrqfwideb
+      - SPRING_DATASOURCE_PASSWORD=bach@129052004
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    networks:
+      - microservices-network
+    restart: on-failure
+
+  # MS BlindBox Service
+  msblindbox:
+    image: nguyendaobach/msblindbox-qe180006:latest
+    container_name: msblindbox
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres
+      - SPRING_DATASOURCE_USERNAME=postgres.cdttwujwmdeeznblpzoi
+      - SPRING_DATASOURCE_PASSWORD=bach@129052004
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    networks:
+      - microservices-network
+    restart: on-failure
+
+  # API Gateway
+  apigateway:
+    image: nguyendaobach/apigateway-qe180006:latest
+    container_name: apigateway
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_CLOUD_GATEWAY_ROUTES_0_ID=account-service
+      - SPRING_CLOUD_GATEWAY_ROUTES_0_URI=http://msaccount:8081
+      - SPRING_CLOUD_GATEWAY_ROUTES_0_PREDICATES_0=Path=/api/account/**
+      - SPRING_CLOUD_GATEWAY_ROUTES_1_ID=blindbox-service
+      - SPRING_CLOUD_GATEWAY_ROUTES_1_URI=http://msblindbox:8083
+      - SPRING_CLOUD_GATEWAY_ROUTES_1_PREDICATES_0=Path=/api/blindbox/**
+      - SPRING_CLOUD_GATEWAY_ROUTES_2_ID=brand-service
+      - SPRING_CLOUD_GATEWAY_ROUTES_2_URI=http://msbrand:8082
+      - SPRING_CLOUD_GATEWAY_ROUTES_2_PREDICATES_0=Path=/api/brand/**
+    depends_on:
+      - msaccount
+      - msbrand
+      - msblindbox
+    networks:
+      - microservices-network
+    restart: on-failure
+
+networks:
+  microservices-network:
+    driver: bridge
